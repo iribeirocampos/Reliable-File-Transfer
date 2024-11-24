@@ -1,0 +1,11 @@
+file-sender
+file-receiver
+*.o
+*.so
+*.d
+
+*.dat
+*.out
+*.log
+*.msc
+*.eps
