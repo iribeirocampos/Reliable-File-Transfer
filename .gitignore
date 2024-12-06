@@ -10,3 +10,4 @@ file-receiver
 *.msc
 *.eps
 token.txt
+reports/
