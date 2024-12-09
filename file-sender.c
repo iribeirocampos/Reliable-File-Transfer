@@ -53,9 +53,14 @@ int main(int argc, char *argv[])
   setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
   // ssize_t len;
-  while (!(feof(file) && data_len < sizeof(data_pkt.data)) || retry == 1)
+  while (!(feof(file) && data_len < sizeof(data_pkt.data)) || retry > 0)
   { // Generate segments from file, until the the end of the file.
     // Prepare data segment.
+    if (retry >= 3)
+    {
+      printf("Too many retries, exiting\n");
+      exit(EXIT_FAILURE);
+    }
     if (retry)
     {
       // setting to last chunk
@@ -86,7 +91,7 @@ int main(int argc, char *argv[])
                  (struct sockaddr *)&src_addr, &(socklen_t){sizeof(src_addr)}) < 0)
     {
       printf("Timeout\n");
-      retry = 1;
+      retry += 1;
     }
     else
     {
