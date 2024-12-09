@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
   data_pkt_t data_pkt;
   size_t data_len;
   int retry = 0;
+  int num_timeouts = 0;
 
   data_pkt_t ack_pkt;
   struct timeval tv;
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
   while (!(feof(file) && data_len < sizeof(data_pkt.data)) || retry > 0)
   { // Generate segments from file, until the the end of the file.
     // Prepare data segment.
-    if (retry >= 3)
+    if (num_timeouts >= 3)
     {
       printf("Too many retries, exiting\n");
       exit(EXIT_FAILURE);
@@ -91,7 +92,8 @@ int main(int argc, char *argv[])
                  (struct sockaddr *)&src_addr, &(socklen_t){sizeof(src_addr)}) < 0)
     {
       printf("Timeout\n");
-      retry += 1;
+      num_timeouts += 1;
+      retry = 1;
     }
     else
     {
