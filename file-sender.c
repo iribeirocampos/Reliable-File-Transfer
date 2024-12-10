@@ -13,6 +13,11 @@ int main(int argc, char *argv[])
   char *host = argv[2];
   int port = atoi(argv[3]);
   int max_window_size = atoi(argv[4]);
+  int window_position = 0;
+  int sent = 0;
+  int dupack_counter = 0;
+  int received_ack = 0;
+
   printf("s: max sender window size %d\n", max_window_size);
 
   FILE *file = fopen(file_name, "r");
@@ -51,15 +56,15 @@ int main(int argc, char *argv[])
 
   data_pkt_t ack_pkt;
   struct timeval tv;
-  tv.tv_sec = 1;
-  tv.tv_usec = 1;
+  tv.tv_sec = 3;
+  tv.tv_usec = 3;
   setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
   // ssize_t len;
   while (!(feof(file) && data_len < sizeof(data_pkt.data)) || retry > 0)
   { // Generate segments from file, until the the end of the file.
     // Prepare data segment.
-    if (num_timeouts >= 3)
+    if (num_timeouts >= 3) // TEMPORARY REMOVE
     {
       printf("S: Too many retries, exiting\n");
       exit(EXIT_FAILURE);
@@ -68,26 +73,33 @@ int main(int argc, char *argv[])
     {
       // setting to last chunk
       // printf("resetting cursor, to %d\n", ntohl(ack_pkt.seq_num));
-      printf("S: RESENDING SEQ NUM %d\n", ack_pkt.seq_num);
+      printf("S: RESENDING SEQ NUM %d\n", htonl(ack_pkt.seq_num));
       fseek(file, ntohl(ack_pkt.seq_num) * MAX_CHUNK_SIZE, 0);
+      sent = ntohl(ack_pkt.seq_num);
+      seq_num = ntohl(ack_pkt.seq_num);
       retry = 0;
     }
-    data_pkt.seq_num = htonl(seq_num++);
 
     // Load data from file.
-    data_len = fread(data_pkt.data, 1, sizeof(data_pkt.data), file);
 
     // Send segment.
-    ssize_t sent_len =
-        sendto(sockfd, &data_pkt, offsetof(data_pkt_t, data) + data_len, 0,
-               (struct sockaddr *)&srv_addr, sizeof(srv_addr));
-    // printf("S: SENDING SEG,  %d\n", data_pkt.seq_num);
-    printf("S: Sending segment %d, size %ld.\n", ntohl(data_pkt.seq_num),
-           offsetof(data_pkt_t, data) + data_len);
-    if (sent_len != offsetof(data_pkt_t, data) + data_len)
+    printf("TESTE: Window position: %d, SENT: %d\n", window_position, sent);
+    while (sent < window_position + max_window_size)
     {
-      fprintf(stderr, "Truncated packet.\n");
-      exit(EXIT_FAILURE);
+      data_pkt.seq_num = htonl(seq_num++);
+      data_len = fread(data_pkt.data, 1, sizeof(data_pkt.data), file);
+      ssize_t sent_len =
+          sendto(sockfd, &data_pkt, offsetof(data_pkt_t, data) + data_len, 0,
+                 (struct sockaddr *)&srv_addr, sizeof(srv_addr));
+      // printf("S: SENDING SEG,  %d\n", data_pkt.seq_num);
+      printf("S: Sending segment %d, size %ld.\n", ntohl(data_pkt.seq_num),
+             offsetof(data_pkt_t, data) + data_len);
+      sent++;
+      if (sent_len != offsetof(data_pkt_t, data) + data_len)
+      {
+        fprintf(stderr, "Truncated packet.\n");
+        exit(EXIT_FAILURE);
+      }
     }
     struct sockaddr_in src_addr;
     if (recvfrom(sockfd, &ack_pkt, sizeof(ack_pkt), 0,
@@ -99,13 +111,26 @@ int main(int argc, char *argv[])
     }
     else
     {
-
-      if (ack_pkt.seq_num < data_pkt.seq_num)
+      printf("SENDER: ACK RECEIVED %d SEQ %d\n", ntohl(ack_pkt.seq_num), ntohl(data_pkt.seq_num));
+      if (ntohl(ack_pkt.seq_num) == received_ack)
       {
-        printf("S: DUPACK, RETRY\n");
-        retry = 1;
+        dupack_counter++;
+        printf("S: DUPACK, number %d\n", dupack_counter);
+        continue;
       }
-      printf("S: Received ack %d.\n", ntohl(ack_pkt.seq_num));
+      else
+      {
+        received_ack = ntohl(ack_pkt.seq_num);
+        dupack_counter = 0;
+        window_position = ntohl(ack_pkt.seq_num);
+        printf("S: Window position: %d\n", window_position);
+        printf("S: Received ack %d.\n", ntohl(ack_pkt.seq_num));
+      }
+      if (dupack_counter > 3)
+      {
+        retry = 1;
+        continue;
+      }
     }
   }
   // Clean up and exit.
