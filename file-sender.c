@@ -12,6 +12,8 @@ int main(int argc, char *argv[])
   char *file_name = argv[1];
   char *host = argv[2];
   int port = atoi(argv[3]);
+  int max_window_size = atoi(argv[4]);
+  printf("s: max sender window size %d\n", max_window_size);
 
   FILE *file = fopen(file_name, "r");
   if (!file)
@@ -59,14 +61,14 @@ int main(int argc, char *argv[])
     // Prepare data segment.
     if (num_timeouts >= 3)
     {
-      printf("Too many retries, exiting\n");
+      printf("S: Too many retries, exiting\n");
       exit(EXIT_FAILURE);
     }
     if (retry)
     {
       // setting to last chunk
-      printf("resetting cursor, to %d\n", ntohl(ack_pkt.seq_num));
-      printf("SEQ NUM %d\n", ack_pkt.seq_num);
+      // printf("resetting cursor, to %d\n", ntohl(ack_pkt.seq_num));
+      printf("S: RESENDING SEQ NUM %d\n", ack_pkt.seq_num);
       fseek(file, ntohl(ack_pkt.seq_num) * MAX_CHUNK_SIZE, 0);
       retry = 0;
     }
@@ -79,8 +81,8 @@ int main(int argc, char *argv[])
     ssize_t sent_len =
         sendto(sockfd, &data_pkt, offsetof(data_pkt_t, data) + data_len, 0,
                (struct sockaddr *)&srv_addr, sizeof(srv_addr));
-    printf("SENDING SEG,  %d\n", data_pkt.seq_num);
-    printf("Sending segment %d, size %ld.\n", ntohl(data_pkt.seq_num),
+    // printf("S: SENDING SEG,  %d\n", data_pkt.seq_num);
+    printf("S: Sending segment %d, size %ld.\n", ntohl(data_pkt.seq_num),
            offsetof(data_pkt_t, data) + data_len);
     if (sent_len != offsetof(data_pkt_t, data) + data_len)
     {
@@ -91,7 +93,7 @@ int main(int argc, char *argv[])
     if (recvfrom(sockfd, &ack_pkt, sizeof(ack_pkt), 0,
                  (struct sockaddr *)&src_addr, &(socklen_t){sizeof(src_addr)}) < 0)
     {
-      printf("Timeout\n");
+      printf("S: Timeout\n");
       num_timeouts += 1;
       retry = 1;
     }
@@ -100,10 +102,10 @@ int main(int argc, char *argv[])
 
       if (ack_pkt.seq_num < data_pkt.seq_num)
       {
-        printf("DUPACK, RETRY\n");
+        printf("S: DUPACK, RETRY\n");
         retry = 1;
       }
-      printf("Received ack %d.\n", ntohl(ack_pkt.seq_num));
+      printf("S: Received ack %d.\n", ntohl(ack_pkt.seq_num));
     }
   }
   // Clean up and exit.
