@@ -2,10 +2,10 @@
 
 set -euo pipefail
 
-NUM_CHUNKS=3
-SENDER_WINDOW=1
+NUM_CHUNKS=5
+SENDER_WINDOW=3
 SENDER_DROP_PATTERN="01"
-RECEIVER_WINDOW=1
+RECEIVER_WINDOW=3
 RECEIVER_DROP_PATTERN=""
 
 rm -f send.dat receive.dat sender-packets.log receiver-packets.log

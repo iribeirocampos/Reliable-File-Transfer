@@ -14,8 +14,9 @@ int main(int argc, char *argv[])
 {
   char *file_name = argv[1];
   int port = atoi(argv[2]);
-  int max_window_size = atoi(argv[3]);
-  printf("max receiver window size: %d\n", max_window_size);
+  // int max_window_size = atoi(argv[3]);
+  // int window_position = 0;
+  // last_received = 0;
 
   FILE *file = fopen(file_name, "w");
   if (!file)
@@ -75,12 +76,13 @@ int main(int argc, char *argv[])
       printf("R: RECEIVER TIMOUT\n");
       break;
     }
-    printf("R: Received segment %d, size %ld.\n", ntohl(data_pkt.seq_num), len);
-
-    if (ntohl(data_pkt.seq_num) > ntohl(ack_pkt.seq_num) + 1) // DUPACK
+    // printf("R: Received segment %d, size %ld.\n", ntohl(data_pkt.seq_num), len);
+    printf("TESTE, Ack anterior: %d, ack atual: %d\n", ntohl(ack_pkt.seq_num), ntohl(data_pkt.seq_num));
+    if ((ntohl(data_pkt.seq_num) > ntohl(ack_pkt.seq_num)) && ack_pkt.seq_num) // DUPACK
     {
       sendto(sockfd, &ack_pkt, sizeof(ack_pkt_t), 0,
              (struct sockaddr *)&src_addr, sizeof(src_addr));
+      printf("R: Sending DUPACK %d.\n", ntohl(ack_pkt.seq_num));
     }
     else
     {
