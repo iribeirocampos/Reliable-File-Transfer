@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
   int num_timeouts = 0;
 
   data_pkt_t ack_pkt;
+  ack_pkt.seq_num = htonl(0);
   struct timeval tv;
   tv.tv_sec = 3;
   tv.tv_usec = 3;
@@ -72,11 +73,12 @@ int main(int argc, char *argv[])
     if (retry)
     {
       // setting to last chunk
-      // printf("resetting cursor, to %d\n", ntohl(ack_pkt.seq_num));
-      printf("S: RESENDING SEQ NUM %d\n", htonl(ack_pkt.seq_num));
+      printf("resetting cursor, to %d\n", ntohl(ack_pkt.seq_num));
+      // printf("S: RESENDING SEQ NUM %d\n", received_ack);
       fseek(file, ntohl(ack_pkt.seq_num) * MAX_CHUNK_SIZE, 0);
-      sent = ntohl(ack_pkt.seq_num);
-      seq_num = ntohl(ack_pkt.seq_num);
+      // fseek(file, received_ack * MAX_CHUNK_SIZE, 0);
+      sent = received_ack;
+      seq_num = received_ack;
       retry = 0;
     }
 

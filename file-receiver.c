@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     }
     // printf("R: Received segment %d, size %ld.\n", ntohl(data_pkt.seq_num), len);
     printf("TESTE, Ack anterior: %d, ack atual: %d\n", ntohl(ack_pkt.seq_num), ntohl(data_pkt.seq_num));
-    if ((ntohl(data_pkt.seq_num) > ntohl(ack_pkt.seq_num)) && ack_pkt.seq_num) // DUPACK
+    if ((ntohl(data_pkt.seq_num) > ntohl(ack_pkt.seq_num))) // DUPACK
     {
       sendto(sockfd, &ack_pkt, sizeof(ack_pkt_t), 0,
              (struct sockaddr *)&src_addr, sizeof(src_addr));
