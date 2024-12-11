@@ -18,8 +18,6 @@ int main(int argc, char *argv[])
   int dupack_counter = 0;
   int received_ack = 0;
 
-  printf("s: max sender window size %d\n", max_window_size);
-
   FILE *file = fopen(file_name, "r");
   if (!file)
   {
@@ -57,17 +55,17 @@ int main(int argc, char *argv[])
   data_pkt_t ack_pkt;
   ack_pkt.seq_num = htonl(0);
   struct timeval tv;
-  tv.tv_sec = 3;
-  tv.tv_usec = 3;
+  tv.tv_sec = 1;
+  tv.tv_usec = 1;
   setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
   // ssize_t len;
   while (!(feof(file) && data_len < sizeof(data_pkt.data)) || retry > 0)
   { // Generate segments from file, until the the end of the file.
     // Prepare data segment.
-    if (num_timeouts >= 3) // TEMPORARY REMOVE
+    if (num_timeouts >= 3)
     {
-      printf("S: Too many retries, exiting\n");
+      printf("S: Too many timeouts, exiting\n");
       exit(EXIT_FAILURE);
     }
     if (retry)
@@ -118,6 +116,12 @@ int main(int argc, char *argv[])
       {
         dupack_counter++;
         printf("S: DUPACK, number %d\n", dupack_counter);
+        if (dupack_counter >= 3)
+        {
+          printf("S: Fast retransmit.\n");
+          retry = 1;
+          continue;
+        }
         continue;
       }
       else
@@ -127,11 +131,6 @@ int main(int argc, char *argv[])
         window_position = ntohl(ack_pkt.seq_num);
         printf("S: Window position: %d\n", window_position);
         printf("S: Received ack %d.\n", ntohl(ack_pkt.seq_num));
-      }
-      if (dupack_counter > 3)
-      {
-        retry = 1;
-        continue;
       }
     }
   }
