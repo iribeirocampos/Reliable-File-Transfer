@@ -56,7 +56,6 @@ int main(int argc, char *argv[])
   ack_pkt_t ack_pkt = {
       .seq_num = htonl(0),
       .selective_acks = htonl(0)};
-  ack_pkt.seq_num = htonl(0);
   struct timeval tv;
   tv.tv_sec = 1;
   tv.tv_usec = 1;
@@ -71,6 +70,7 @@ int main(int argc, char *argv[])
       printf("S: Too many timeouts, exiting\n");
       exit(EXIT_FAILURE);
     }
+
     if (retry)
     {
       // setting to last chunk
