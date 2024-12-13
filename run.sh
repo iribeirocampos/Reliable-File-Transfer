@@ -6,7 +6,7 @@ NUM_CHUNKS=6
 SENDER_WINDOW=4
 SENDER_DROP_PATTERN="01"
 RECEIVER_WINDOW=4
-RECEIVER_DROP_PATTERN="01"
+RECEIVER_DROP_PATTERN=""
 
 rm -f send.dat receive.dat sender-packets.log receiver-packets.log
 dd if=/dev/urandom of=send.dat bs=1000 count=$((NUM_CHUNKS-1))
