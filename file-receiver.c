@@ -64,12 +64,14 @@ int main(int argc, char *argv[])
   setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
   ssize_t len;
   int last_pack = 0;
-  // int last_pack;
+  struct sockaddr_in src_addr = {0};
+  struct sockaddr_in src_addr_current = {0};
+  //  int last_pack;
   do
   { // Iterate over segments, until last the segment is detected.
     // Receive segment.
-    struct sockaddr_in src_addr;
     data_pkt_t data_pkt;
+
     if ((len =
              recvfrom(sockfd, &data_pkt, sizeof(data_pkt), 0,
                       (struct sockaddr *)&src_addr, &(socklen_t){sizeof(src_addr)})) < 0)
@@ -85,6 +87,17 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
       }
     }
+    if (src_addr_current.sin_addr.s_addr == 0) // First call
+    {
+      src_addr_current.sin_addr.s_addr = src_addr.sin_addr.s_addr;
+      src_addr_current.sin_port = src_addr.sin_port;
+    }
+    if (src_addr_current.sin_addr.s_addr != src_addr.sin_addr.s_addr)
+    {
+      printf("NEW SOURCE IGNORING\n");
+      continue;
+    }
+
     if (len == sizeof(data_pkt_t))
     {
       last_pack = 1;
