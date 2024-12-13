@@ -81,6 +81,7 @@ int main(int argc, char *argv[])
       sent = received_ack;
       seq_num = received_ack;
       retry = 0;
+      dupack_counter = 0;
     }
 
     // Load data from file.

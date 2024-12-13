@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
              (struct sockaddr *)&src_addr, sizeof(src_addr));
       printf("R: Sending DUPACK %d.\n", ntohl(ack_pkt.seq_num));
     }
-    else
+    else // RECEIVED HAS EXPECTED SEQ
     {
       fwrite(data_pkt.data, 1, len - offsetof(data_pkt_t, data), file);
       //  Send acknowledgment.
