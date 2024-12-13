@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
   tv.tv_usec = 4;
   setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
   ssize_t len;
+  int last_pack = 0;
   // int last_pack;
   do
   { // Iterate over segments, until last the segment is detected.
@@ -73,8 +74,20 @@ int main(int argc, char *argv[])
              recvfrom(sockfd, &data_pkt, sizeof(data_pkt), 0,
                       (struct sockaddr *)&src_addr, &(socklen_t){sizeof(src_addr)})) < 0)
     {
-      // printf("R: RECEIVER TIMOUT\n");
-      break;
+      if (last_pack)
+      {
+        printf("EXIT SUCESS\n");
+        exit(EXIT_SUCCESS);
+      }
+      else
+      {
+        printf("EXIT FAILURE\n");
+        exit(EXIT_FAILURE);
+      }
+    }
+    if (len == sizeof(data_pkt_t))
+    {
+      last_pack = 1;
     }
     // printf("R: Received segment %d, size %ld.\n", ntohl(data_pkt.seq_num), len);
     // printf("TESTE, Ack anterior: %d, ack atual: %d\n", ntohl(ack_pkt.seq_num), ntohl(data_pkt.seq_num));
@@ -82,7 +95,7 @@ int main(int argc, char *argv[])
     {
       if (ntohl(data_pkt.seq_num) != window_position + max_window_size) // checking if in window
       {
-        printf("Window posistion %d GOT seq %d\n", window_position, ntohl(data_pkt.seq_num));
+        // printf("Window posistion %d GOT seq %d\n", window_position, ntohl(data_pkt.seq_num));
         int position = ntohl(data_pkt.seq_num) - window_position - 1;
         ack_pkt.selective_acks |= htonl((1 << position));
 
@@ -108,34 +121,33 @@ int main(int argc, char *argv[])
       // if (ack_pkt.selective_acks)
       //{
       int advances = 1;
-      printf("RECEIVER: GOT WHAT EXPECTED %d - With slecive ack  %d\n", ntohl(ack_pkt.seq_num), ntohl(ack_pkt.selective_acks));
+      // printf("RECEIVER: GOT WHAT EXPECTED %d - With slecive ack  %d\n", ntohl(ack_pkt.seq_num), ntohl(ack_pkt.selective_acks));
       for (int i = 0; i < max_window_size - 1; i++)
       {
         int bit = (ntohl(ack_pkt.selective_acks) >> i) & 1;
         // window_position++;
         // ack_pkt.seq_num = htonl(ntohl(data_pkt.seq_num) + 1);
-        printf("RECEIVER: ADVANCING Bit %d: %d \n", i, bit);
+        // printf("RECEIVER: ADVANCING Bit %d: %d \n", i, bit);
         // ack_pkt.selective_acks = htonl(ntohl(ack_pkt.selective_acks) >> 1);
         if (bit == 0)
         {
-          printf("RECEIVER: FOUND A 0 BREAKING\n");
+          // printf("RECEIVER: FOUND A 0 BREAKING\n");
           break;
         }
         advances++;
       }
 
-      printf("RECEIVER: ADVANCES %d\n", advances);
+      // printf("RECEIVER: ADVANCES %d\n", advances);
       ack_pkt.seq_num = htonl(ntohl(data_pkt.seq_num) + advances);
       ack_pkt.selective_acks = htonl(ntohl(ack_pkt.selective_acks) >> advances);
       window_position += advances;
-      printf("RECEIVER: NEW WINDOW POSITION %d\n", window_position);
-      printf("RECEIVER: NEW ACK %d --> %d\n", ntohl(ack_pkt.seq_num), ntohl(ack_pkt.selective_acks));
-      //}
+      // printf("RECEIVER: NEW WINDOW POSITION %d\n", window_position);
+      // printf("RECEIVER: NEW ACK %d --> %d\n", ntohl(ack_pkt.seq_num), ntohl(ack_pkt.selective_acks));
+      // }
       sendto(sockfd, &ack_pkt, sizeof(ack_pkt_t), 0,
              (struct sockaddr *)&src_addr, sizeof(src_addr));
       // printf("R: Sending acknowledgment %d.\n", ntohl(ack_pkt.seq_num));
     }
-
   } while (true);
 
   // Clean up and exit.

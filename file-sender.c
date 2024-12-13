@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 
         if (((selective_ack >> selective_ack_index) & 1) && (selective_ack_index >= 0))
         {
-          printf("ALREADY RECEIVED %d\n", seq_num + selective_ack_index);
+          // printf("ALREADY RECEIVED %d\n", seq_num + selective_ack_index);
           sent++;
           selective_ack_index++;
           continue;
@@ -140,10 +140,10 @@ int main(int argc, char *argv[])
       if (ntohl(ack_pkt.seq_num) == received_ack)
       {
         dupack_counter++;
-        printf("SENDER: DUPACK, number %d with SLECTIVE %d\n", dupack_counter, ntohl(ack_pkt.selective_acks));
+        // printf("SENDER: DUPACK, number %d with SLECTIVE %d\n", dupack_counter, ntohl(ack_pkt.selective_acks));
         if (dupack_counter >= 3)
         {
-          printf("S: Fast retransmit.\n");
+          // printf("S: Fast retransmit.\n");
           retry = 1;
         }
         continue;
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
         dupack_counter = 0;
         window_position = ntohl(ack_pkt.seq_num);
         // printf("S: Window position: %d\n", window_position);
-        printf("S: Received ack %d.\n", ntohl(ack_pkt.seq_num));
+        // printf("S: Received ack %d.\n", ntohl(ack_pkt.seq_num));
       }
     }
     if (last_package && sent == received_ack)
