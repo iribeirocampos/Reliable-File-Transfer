@@ -14,8 +14,8 @@ int main(int argc, char *argv[])
 {
   char *file_name = argv[1];
   int port = atoi(argv[2]);
-  // int max_window_size = atoi(argv[3]);
-  // int window_position = 0;
+  int max_window_size = atoi(argv[3]);
+  int window_position = 0;
   // last_received = 0;
 
   FILE *file = fopen(file_name, "w");
@@ -80,6 +80,16 @@ int main(int argc, char *argv[])
     printf("TESTE, Ack anterior: %d, ack atual: %d\n", ntohl(ack_pkt.seq_num), ntohl(data_pkt.seq_num));
     if ((ntohl(data_pkt.seq_num) > ntohl(ack_pkt.seq_num))) // DUPACK
     {
+      if (ntohl(data_pkt.seq_num) != window_position + max_window_size + 1) // checking if in window
+      {
+        printf("Window posistion %d GOT seq %d\n", window_position, ntohl(data_pkt.seq_num));
+        int position = ntohl(data_pkt.seq_num) - window_position - 1;
+        ack_pkt.selective_acks |= htonl((1 << position));
+        // fseek(file, ntohl(data_pkt.seq_num) * MAX_CHUNK_SIZE, 0); // Move file pointer to the offset
+        // fwrite(data_pkt.data, 1, len - offsetof(data_pkt_t, data), file);
+        //  printf("R: First Zero is at: %d\n", find_first_zero(ntohl(ack_pkt.selective_acks), max_window_size - 1));
+      }
+
       sendto(sockfd, &ack_pkt, sizeof(ack_pkt_t), 0,
              (struct sockaddr *)&src_addr, sizeof(src_addr));
       printf("R: Sending DUPACK %d.\n", ntohl(ack_pkt.seq_num));

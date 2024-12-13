@@ -127,7 +127,8 @@ int main(int argc, char *argv[])
       if (ntohl(ack_pkt.seq_num) == received_ack)
       {
         dupack_counter++;
-        printf("S: DUPACK, number %d\n", dupack_counter);
+
+        printf("S: DUPACK, number %d with SLECTIVE %d\n", dupack_counter, ntohl(ack_pkt.selective_acks));
         if (dupack_counter >= 3)
         {
           printf("S: Fast retransmit.\n");
