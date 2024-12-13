@@ -73,6 +73,8 @@ int main(int argc, char *argv[])
              recvfrom(sockfd, &data_pkt, sizeof(data_pkt), 0,
                       (struct sockaddr *)&src_addr, &(socklen_t){sizeof(src_addr)})) < 0)
     {
+      // CHECK IF LAST PACKAGE
+      // if(len == sizeof(data_pkt_t))
       printf("R: RECEIVER TIMOUT\n");
       break;
     }

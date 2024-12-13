@@ -85,10 +85,9 @@ int main(int argc, char *argv[])
     }
 
     // Load data from file.
-
     // Send segment.
     printf("TESTE: Window position: %d, SENT: %d\n", window_position, sent);
-    if (!last_package || sent == 0)
+    if (!last_package)
     {
       while (sent < window_position + max_window_size)
       {
@@ -120,6 +119,7 @@ int main(int argc, char *argv[])
       printf("S: Timeout\n");
       num_timeouts += 1;
       retry = 1;
+      last_package = 0;
     }
     else
     {
