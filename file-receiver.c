@@ -14,8 +14,8 @@ int main(int argc, char *argv[])
 {
   char *file_name = argv[1];
   int port = atoi(argv[2]);
-  // int max_window_size = atoi(argv[3]);
-  // int window_position = 0;
+  int max_window_size = atoi(argv[3]);
+  int window_position = 0;
   // last_received = 0;
 
   FILE *file = fopen(file_name, "w");
@@ -73,28 +73,67 @@ int main(int argc, char *argv[])
              recvfrom(sockfd, &data_pkt, sizeof(data_pkt), 0,
                       (struct sockaddr *)&src_addr, &(socklen_t){sizeof(src_addr)})) < 0)
     {
-      // CHECK IF LAST PACKAGE
-      // if(len == sizeof(data_pkt_t))
-      printf("R: RECEIVER TIMOUT\n");
+      // printf("R: RECEIVER TIMOUT\n");
       break;
     }
     // printf("R: Received segment %d, size %ld.\n", ntohl(data_pkt.seq_num), len);
-    printf("TESTE, Ack anterior: %d, ack atual: %d\n", ntohl(ack_pkt.seq_num), ntohl(data_pkt.seq_num));
+    // printf("TESTE, Ack anterior: %d, ack atual: %d\n", ntohl(ack_pkt.seq_num), ntohl(data_pkt.seq_num));
     if ((ntohl(data_pkt.seq_num) > ntohl(ack_pkt.seq_num))) // DUPACK
     {
+      if (ntohl(data_pkt.seq_num) != window_position + max_window_size) // checking if in window
+      {
+        printf("Window posistion %d GOT seq %d\n", window_position, ntohl(data_pkt.seq_num));
+        int position = ntohl(data_pkt.seq_num) - window_position - 1;
+        ack_pkt.selective_acks |= htonl((1 << position));
+
+        // printf("RECEIVER: got seq %d waiting in %d\n", ntohl(data_pkt.seq_num), ntohl(ack_pkt.seq_num));
+        // printf("RECEIVER: position %d got ack_selective %d\n", position, ntohl(ack_pkt.selective_acks));
+        fseek(file, ntohl(data_pkt.seq_num) * MAX_CHUNK_SIZE, 0); // Move file pointer to the offset
+        fwrite(data_pkt.data, 1, len - offsetof(data_pkt_t, data), file);
+        //  printf("R: First Zero is at: %d\n", find_first_zero(ntohl(ack_pkt.selective_acks), max_window_size - 1));
+      }
+
       sendto(sockfd, &ack_pkt, sizeof(ack_pkt_t), 0,
              (struct sockaddr *)&src_addr, sizeof(src_addr));
-      printf("R: Sending DUPACK %d.\n", ntohl(ack_pkt.seq_num));
+      // printf("R: Sending DUPACK %d.\n", ntohl(ack_pkt.seq_num));
     }
     else // RECEIVED HAS EXPECTED SEQ
     {
+      fseek(file, ntohl(data_pkt.seq_num) * MAX_CHUNK_SIZE, 0); // Move file pointer to the offset
       fwrite(data_pkt.data, 1, len - offsetof(data_pkt_t, data), file);
       //  Send acknowledgment.
-      ack_pkt.seq_num = data_pkt.seq_num;
-      ack_pkt.seq_num += htonl(1);
+      // ack_pkt.seq_num = htonl(ntohl(data_pkt.seq_num) + 1);
+      // ack_pkt.seq_num += htonl(1);
+      //  Checking bits of Selective Ack
+      // if (ack_pkt.selective_acks)
+      //{
+      int advances = 1;
+      printf("RECEIVER: GOT WHAT EXPECTED %d - With slecive ack  %d\n", ntohl(ack_pkt.seq_num), ntohl(ack_pkt.selective_acks));
+      for (int i = 0; i < max_window_size - 1; i++)
+      {
+        int bit = (ntohl(ack_pkt.selective_acks) >> i) & 1;
+        // window_position++;
+        // ack_pkt.seq_num = htonl(ntohl(data_pkt.seq_num) + 1);
+        printf("RECEIVER: ADVANCING Bit %d: %d \n", i, bit);
+        // ack_pkt.selective_acks = htonl(ntohl(ack_pkt.selective_acks) >> 1);
+        if (bit == 0)
+        {
+          printf("RECEIVER: FOUND A 0 BREAKING\n");
+          break;
+        }
+        advances++;
+      }
+
+      printf("RECEIVER: ADVANCES %d\n", advances);
+      ack_pkt.seq_num = htonl(ntohl(data_pkt.seq_num) + advances);
+      ack_pkt.selective_acks = htonl(ntohl(ack_pkt.selective_acks) >> advances);
+      window_position += advances;
+      printf("RECEIVER: NEW WINDOW POSITION %d\n", window_position);
+      printf("RECEIVER: NEW ACK %d --> %d\n", ntohl(ack_pkt.seq_num), ntohl(ack_pkt.selective_acks));
+      //}
       sendto(sockfd, &ack_pkt, sizeof(ack_pkt_t), 0,
              (struct sockaddr *)&src_addr, sizeof(src_addr));
-      printf("R: Sending acknowledgment %d.\n", ntohl(ack_pkt.seq_num));
+      // printf("R: Sending acknowledgment %d.\n", ntohl(ack_pkt.seq_num));
     }
 
   } while (true);
