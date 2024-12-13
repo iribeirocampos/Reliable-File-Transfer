@@ -99,12 +99,11 @@ int main(int argc, char *argv[])
       continue;
     }
     printf("LEN %ld\n", len);
-    printf("LEN DATA %ld\n", sizeof(data_pkt_t));
-    // if (len == sizeof(data_pkt_t) || len < 1004)
-    //{
-    last_pack = 1;
-    // printf("LAST PACK\n");
-    // }
+    if (len != sizeof(data_pkt_t))
+    {
+      last_pack = 1;
+      printf("LAST PACK\n");
+    }
     // printf("R: Received segment %d, size %ld.\n", ntohl(data_pkt.seq_num), len);
     // printf("TESTE, Ack anterior: %d, ack atual: %d\n", ntohl(ack_pkt.seq_num), ntohl(data_pkt.seq_num));
     if ((ntohl(data_pkt.seq_num) > ntohl(ack_pkt.seq_num))) // DUPACK
