@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 
     // Send segment.
     printf("TESTE: Window position: %d, SENT: %d\n", window_position, sent);
-    if (!last_package)
+    if (!last_package || sent == 0)
     {
       while (sent < window_position + max_window_size)
       {
@@ -129,7 +129,6 @@ int main(int argc, char *argv[])
         {
           printf("S: Fast retransmit.\n");
           retry = 1;
-          continue;
         }
         continue;
       }
