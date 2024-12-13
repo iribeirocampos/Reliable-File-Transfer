@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
   size_t data_len;
   int retry = 0;
   int num_timeouts = 0;
+  int last_package = 0;
 
   data_pkt_t ack_pkt;
   ack_pkt.seq_num = htonl(0);
@@ -60,7 +61,7 @@ int main(int argc, char *argv[])
   setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
   // ssize_t len;
-  while (!(feof(file) && data_len < sizeof(data_pkt.data)) || retry > 0)
+  while (!(feof(file) && data_len < sizeof(data_pkt.data)) || retry > 0 || last_package)
   { // Generate segments from file, until the the end of the file.
     // Prepare data segment.
     if (num_timeouts >= 3)
@@ -84,21 +85,29 @@ int main(int argc, char *argv[])
 
     // Send segment.
     printf("TESTE: Window position: %d, SENT: %d\n", window_position, sent);
-    while (sent < window_position + max_window_size)
+    if (!last_package)
     {
-      data_pkt.seq_num = htonl(seq_num++);
-      data_len = fread(data_pkt.data, 1, sizeof(data_pkt.data), file);
-      ssize_t sent_len =
-          sendto(sockfd, &data_pkt, offsetof(data_pkt_t, data) + data_len, 0,
-                 (struct sockaddr *)&srv_addr, sizeof(srv_addr));
-      // printf("S: SENDING SEG,  %d\n", data_pkt.seq_num);
-      printf("S: Sending segment %d, size %ld.\n", ntohl(data_pkt.seq_num),
-             offsetof(data_pkt_t, data) + data_len);
-      sent++;
-      if (sent_len != offsetof(data_pkt_t, data) + data_len)
+      while (sent < window_position + max_window_size)
       {
-        fprintf(stderr, "Truncated packet.\n");
-        exit(EXIT_FAILURE);
+        data_pkt.seq_num = htonl(seq_num++);
+        data_len = fread(data_pkt.data, 1, sizeof(data_pkt.data), file);
+        ssize_t sent_len =
+            sendto(sockfd, &data_pkt, offsetof(data_pkt_t, data) + data_len, 0,
+                   (struct sockaddr *)&srv_addr, sizeof(srv_addr));
+        // printf("S: SENDING SEG,  %d\n", data_pkt.seq_num);
+        printf("S: Sending segment %d, size %ld.\n", ntohl(data_pkt.seq_num),
+               offsetof(data_pkt_t, data) + data_len);
+        if (sent_len != offsetof(data_pkt_t, data) + data_len)
+        {
+          fprintf(stderr, "Truncated packet.\n");
+          exit(EXIT_FAILURE);
+        }
+        if (feof(file))
+        {
+          last_package = 1;
+          printf("END OF FILE\n");
+        }
+        sent++;
       }
     }
     struct sockaddr_in src_addr;
@@ -132,6 +141,11 @@ int main(int argc, char *argv[])
         printf("S: Window position: %d\n", window_position);
         printf("S: Received ack %d.\n", ntohl(ack_pkt.seq_num));
       }
+    }
+    if (last_package && sent == received_ack)
+    {
+      printf("LAST TEST: ENVIADO %d, ACK %d\n", sent, received_ack);
+      last_package = 0;
     }
   }
   // Clean up and exit.
