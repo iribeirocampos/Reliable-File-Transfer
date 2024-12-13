@@ -161,6 +161,8 @@ int main(int argc, char *argv[])
     {
       // printf("LAST TEST: ENVIADO %d, ACK %d\n", sent, received_ack);
       last_package = 0;
+      printf("SENDER: EXIT SUCESS.\n");
+      exit(EXIT_SUCCESS);
     }
   }
   // Clean up and exit.
