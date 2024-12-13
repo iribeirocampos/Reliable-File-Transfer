@@ -53,7 +53,9 @@ int main(int argc, char *argv[])
   int num_timeouts = 0;
   int last_package = 0;
 
-  data_pkt_t ack_pkt;
+  ack_pkt_t ack_pkt = {
+      .seq_num = htonl(0),
+      .selective_acks = htonl(0)};
   ack_pkt.seq_num = htonl(0);
   struct timeval tv;
   tv.tv_sec = 1;
