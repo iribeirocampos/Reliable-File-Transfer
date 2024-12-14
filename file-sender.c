@@ -134,6 +134,11 @@ int main(int argc, char *argv[])
       retry = 1;
       last_package = 0;
     }
+    else if (src_addr.sin_addr.s_addr != srv_addr.sin_addr.s_addr && src_addr.sin_port != srv_addr.sin_port) // receiving datagrams from other sources
+    {
+      printf("S: Received datagram from other source, IGNORING\n");
+      continue;
+    }
     else
     {
       // printf("SENDER: ACK RECEIVED %d SEQ %d\n", ntohl(ack_pkt.seq_num), ntohl(data_pkt.seq_num));
