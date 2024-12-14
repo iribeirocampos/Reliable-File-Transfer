@@ -84,6 +84,8 @@ int main(int argc, char *argv[])
       else
       {
         printf("EXIT FAILURE\n");
+        fclose(file);
+        remove(file_name);
         exit(EXIT_FAILURE);
       }
     }
